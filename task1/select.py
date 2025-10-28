@@ -1,101 +1,114 @@
 import psycopg2
 
-conn = psycopg2.connect(
-    dbname="task1db",
-    user="postgres",
-    password="secret_password",
-    host="localhost",
-    port="5432"
-)
-cur = conn.cursor()
+def execute_query(sql: str, fetch: bool = True) -> list:
+    """Execute a SQL query on PostgreSQL and return results if applicable."""
+    with psycopg2.connect(
+        dbname="task1db",
+        user="postgres",
+        password="secret_password",
+        host="localhost",
+        port="5432"
+    ) as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql)
+            if fetch:
+                return cur.fetchall()
+            conn.commit()
+            return []
 
-print("\n1. Отримати всі завдання для користувача з id = 1")
-cur.execute("SELECT * FROM tasks WHERE user_id = 1")
-print(cur.fetchall())
 
-print("\n2. Вибрати завдання зі статусом 'new'")
-cur.execute("""
-SELECT * FROM tasks
-WHERE status_id = (SELECT id FROM status WHERE name = 'new')
-""")
-print(cur.fetchall())
+def main():
+    queries = {
+        "1. Отримати всі завдання для користувача з id = 1": """
+            SELECT * FROM tasks WHERE user_id = 1
+        """,
 
-print("\n3. Змінити статус завдання з id = 1 на 'in progress'")
-cur.execute("""
-UPDATE tasks SET status_id = (SELECT id FROM status WHERE name = 'in progress')
-WHERE id = 1
-""")
-conn.commit()
+        "2. Вибрати завдання зі статусом 'new'": """
+            SELECT * FROM tasks
+            WHERE status_id = (SELECT id FROM status WHERE name = 'new')
+        """,
 
-print("\n4. Отримати список користувачів, які не мають жодного завдання")
-cur.execute("""
-SELECT * FROM users
-WHERE id NOT IN (SELECT DISTINCT user_id FROM tasks)
-""")
-print(cur.fetchall())
+        "3. Змінити статус завдання з id = 1 на 'in progress'": """
+            UPDATE tasks SET status_id = (SELECT id FROM status WHERE name = 'in progress')
+            WHERE id = 1
+        """,
 
-print("\n5. Додати нове завдання для користувача з id = 2")
-cur.execute("""
-INSERT INTO tasks (title, description, status_id, user_id)
-VALUES ('New generated task', 'Simple description', 1, 2)
-""")
-conn.commit()
+        "4. Отримати список користувачів, які не мають жодного завдання": """
+            SELECT * FROM users
+            WHERE id NOT IN (SELECT DISTINCT user_id FROM tasks)
+        """,
 
-print("\n6. Отримати всі завдання, які ще не завершено")
-cur.execute("""
-SELECT * FROM tasks
-WHERE status_id != (SELECT id FROM status WHERE name = 'completed')
-""")
-print(cur.fetchall())
+        "5. Додати нове завдання для користувача з id = 2": """
+            INSERT INTO tasks (title, description, status_id, user_id)
+            VALUES ('New generated task', 'Simple description', 1, 2)
+        """,
 
-print("\n7. Видалити завдання з id = 3")
-cur.execute("DELETE FROM tasks WHERE id = 3")
-conn.commit()
+        "6. Отримати всі завдання, які ще не завершено": """
+            SELECT * FROM tasks
+            WHERE status_id != (SELECT id FROM status WHERE name = 'completed')
+        """,
 
-print("\n8. Знайти користувачів з електронною поштою '@example.com'")
-cur.execute("SELECT * FROM users WHERE email LIKE '%@example.com'")
-print(cur.fetchall())
+        "7. Видалити завдання з id = 3": """
+            DELETE FROM tasks WHERE id = 3
+        """,
 
-print("\n9. Оновити ім'я користувача з id = 4 на 'Updated Name'")
-cur.execute("UPDATE users SET fullname = 'Updated Name' WHERE id = 4")
-conn.commit()
+        "8. Знайти користувачів з електронною поштою '@example.com'": """
+            SELECT * FROM users WHERE email LIKE '%@example.com'
+        """,
 
-print("\n10. Отримати кількість завдань для кожного статусу")
-cur.execute("""
-SELECT s.name, COUNT(t.id) FROM status s
-LEFT JOIN tasks t ON t.status_id = s.id
-GROUP BY s.name
-""")
-print(cur.fetchall())
+        "9. Оновити ім'я користувача з id = 4 на 'Updated Name'": """
+            UPDATE users SET fullname = 'Updated Name' WHERE id = 4
+        """,
 
-print("\n11. Отримати завдання, які призначені користувачам з доменною частиною електронної пошти 'example.com'")
-cur.execute("""
-SELECT t.* FROM tasks t
-JOIN users u ON t.user_id = u.id
-WHERE u.email LIKE '%@example.com'
-""")
-print(cur.fetchall())
+        "10. Отримати кількість завдань для кожного статусу": """
+            SELECT s.name, COUNT(t.id)
+            FROM status s
+            LEFT JOIN tasks t ON t.status_id = s.id
+            GROUP BY s.name
+        """,
 
-print("\n12. Отримати список завдань, що не мають опису")
-cur.execute("SELECT * FROM tasks WHERE description IS NULL")
-print(cur.fetchall())
+        "11. Отримати завдання, які призначені користувачам з доменною частиною електронної пошти 'example.com'": """
+            SELECT t.*
+            FROM tasks t
+            JOIN users u ON t.user_id = u.id
+            WHERE u.email LIKE '%@example.com'
+        """,
 
-print("\n13. Вибрати користувачів та їхні завдання, які є у статусі 'in progress'")
-cur.execute("""
-SELECT u.fullname, t.title FROM users u
-JOIN tasks t ON t.user_id = u.id
-JOIN status s ON t.status_id = s.id
-WHERE s.name = 'in progress'
-""")
-print(cur.fetchall())
+        "12. Отримати список завдань, що не мають опису": """
+            SELECT * FROM tasks WHERE description IS NULL
+        """,
 
-print("\n14. Отримати користувачів та кількість їхніх завдань")
-cur.execute("""
-SELECT u.fullname, COUNT(t.id) FROM users u
-LEFT JOIN tasks t ON u.id = t.user_id
-GROUP BY u.fullname
-""")
-print(cur.fetchall())
+        "13. Вибрати користувачів та їхні завдання, які є у статусі 'in progress'. Впорядкoванo за ім'ям користувача": """
+            SELECT u.fullname, t.title
+            FROM users u
+            JOIN tasks t ON t.user_id = u.id
+            JOIN status s ON t.status_id = s.id
+            WHERE s.name = 'in progress'
+            ORDER BY u.fullname
+        """,
 
-cur.close()
-conn.close()
+        "14. Отримати користувачів та кількість їхніх завдань": """
+            SELECT u.fullname, COUNT(t.id)
+            FROM users u
+            LEFT JOIN tasks t ON u.id = t.user_id
+            GROUP BY u.fullname
+        """
+    }
+
+    for description, sql in queries.items():
+        print(f"\n{description}\n")
+        fetch = not sql.strip().upper().startswith(("UPDATE", "INSERT", "DELETE"))
+        result = execute_query(sql, fetch=fetch)
+        
+        if fetch:
+            if result:
+                for row in result:
+                    print(row)
+            else:
+                print("No results found.")
+        else:
+            print("Query executed successfully (no results to return).")
+
+
+if __name__ == "__main__":
+    main()
