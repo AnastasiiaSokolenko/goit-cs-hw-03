@@ -1,21 +1,28 @@
+from dotenv import load_dotenv
 import psycopg2
+from psycopg2 import OperationalError, DatabaseError
+
+load_dotenv()
 
 def execute_query(sql: str, fetch: bool = True) -> list:
     """Execute a SQL query on PostgreSQL and return results if applicable."""
-    with psycopg2.connect(
-        dbname="task1db",
-        user="postgres",
-        password="secret_password",
-        host="localhost",
-        port="5432"
-    ) as conn:
-        with conn.cursor() as cur:
-            cur.execute(sql)
-            if fetch:
-                return cur.fetchall()
-            conn.commit()
-            return []
-
+    try:
+        with psycopg2.connect(
+            dbname="task1db",
+            user="postgres",
+            password="secret_password",
+            host="localhost",
+            port="5432"
+        ) as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql)
+                if fetch:
+                    return cur.fetchall()
+                conn.commit()
+                return []
+    except (OperationalError, DatabaseError) as e:
+        print(f"Database error: {e}")
+        return []
 
 def main():
     queries = {
