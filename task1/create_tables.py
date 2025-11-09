@@ -1,11 +1,17 @@
 import psycopg2
+from dotenv import load_dotenv
+import os
 
+# Load environment variables from .env file
+load_dotenv()
+
+# Read variables from environment
 conn = psycopg2.connect(
-    dbname="task1db",
-    user="postgres",
-    password="secret_password",
-    host="localhost",
-    port="5432"
+    dbname=os.getenv("PG_DB_NAME"),
+    user=os.getenv("PG_DB_USER"),
+    password=os.getenv("PG_DB_PASSWORD"),
+    host=os.getenv("PG_DB_HOST"),
+    port=os.getenv("PG_DB_PORT")
 )
 cur = conn.cursor()
 
